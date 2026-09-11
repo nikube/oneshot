@@ -80,7 +80,16 @@ class modOneshot extends DolibarrModules
 	 */
 	public function init($options = '')
 	{
-		return $this->_init(array(), $options);
+		$r = $this->_init(array(), $options);
+		// Seed documents/oneshot with the shipped examples (never overwrite an existing script)
+		$dst = DOL_DATA_ROOT.'/oneshot';
+		dol_mkdir($dst);
+		foreach (glob(__DIR__.'/../../examples/*.php') ?: array() as $f) {
+			if (!file_exists($dst.'/'.basename($f))) {
+				copy($f, $dst.'/'.basename($f));
+			}
+		}
+		return $r;
 	}
 
 	/**
