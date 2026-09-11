@@ -33,8 +33,8 @@ class modOneshot extends DolibarrModules
 
 		$this->db = $db;
 
-		// Anatole Conseil range — next free after creditnotestock (185174)
-		$this->numero = 185175;
+		// Anatole Conseil range — next free after surfaceetvolume (185175)
+		$this->numero = 185176;
 		$this->rights_class = 'oneshot';
 		$this->family = 'technic';
 		$this->module_position = '90';

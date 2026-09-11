@@ -6,7 +6,7 @@
   "author": "Anatole Conseil",
   "url": "https://github.com/nikube/oneshot",
   "license": "GPL-3.0-or-later",
-  "dolibarr_module_id": 185175,
+  "dolibarr_module_id": 185176,
   "branch": "master",
   "compatibility": {
     "0.x": {
