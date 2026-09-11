@@ -1,6 +1,6 @@
 # Copyright (C) 2026 Anatole Conseil
-Module185176Name=Oneshot
-Module185176Desc=Run small one-off PHP scripts from the admin UI
+Module193947Name=Oneshot
+Module193947Desc=Run small one-off PHP scripts from the admin UI
 OneshotTitle=Oneshot - one-off scripts
 OneshotIntro=Scripts are stored in %s (outside the web root). They run with the Dolibarr context loaded: $db, $user, $conf, $langs and $args (arguments split on spaces). Administrators only.
 OneshotScript=Script

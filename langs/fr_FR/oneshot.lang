@@ -1,6 +1,6 @@
 # Copyright (C) 2026 Anatole Conseil
-Module185176Name=Oneshot
-Module185176Desc=Exécute de petits scripts PHP ponctuels depuis l'interface d'administration
+Module193947Name=Oneshot
+Module193947Desc=Exécute de petits scripts PHP ponctuels depuis l'interface d'administration
 OneshotTitle=Oneshot - scripts ponctuels
 OneshotIntro=Les scripts sont stockés dans %s (hors racine web). Ils s'exécutent avec le contexte Dolibarr chargé : $db, $user, $conf, $langs et $args (arguments découpés sur les espaces). Réservé aux administrateurs.
 OneshotScript=Script
