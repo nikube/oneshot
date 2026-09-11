@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "module_id": "oneshot",
+  "name": "Oneshot",
+  "description": "Run small one-off PHP scripts (data fixes, batch operations) from the admin UI with the Dolibarr context loaded.",
+  "author": "Anatole Conseil",
+  "url": "https://github.com/nikube/oneshot",
+  "license": "GPL-3.0-or-later",
+  "dolibarr_module_id": 185175,
+  "branch": "master",
+  "compatibility": {
+    "0.x": {
+      "dolibarr_min": "19.0.0",
+      "dolibarr_max": "24.*",
+      "php_min": "7.4"
+    }
+  },
+  "dependencies": {
+    "modules": [],
+    "php_extensions": []
+  }
+}

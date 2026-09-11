@@ -1,0 +1,17 @@
+# Copyright (C) 2026 Anatole Conseil
+Module185175Name=Oneshot
+Module185175Desc=Exécute de petits scripts PHP ponctuels depuis l'interface d'administration
+OneshotTitle=Oneshot - scripts ponctuels
+OneshotIntro=Les scripts sont stockés dans %s (hors racine web). Ils s'exécutent avec le contexte Dolibarr chargé : $db, $user, $conf, $langs et $args (arguments découpés sur les espaces). Réservé aux administrateurs.
+OneshotScript=Script
+OneshotArgs=Arguments
+OneshotArgsPlaceholder=CO2601-0012 CO2601-0034
+OneshotRun=Exécuter
+OneshotAdd=Ajouter ou remplacer un script
+OneshotNoScript=Aucun script. Collez-en un ci-dessous.
+OneshotOutput=Sortie de %s (%s s)
+OneshotNoOutput=(aucune sortie)
+OneshotSaved=Script %s enregistré
+OneshotSaveError=Impossible d'écrire %s
+OneshotDeleted=Script %s supprimé
+OneshotConfirmDelete=Supprimer %s ?
