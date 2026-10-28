@@ -15,3 +15,6 @@ OneshotSaved=Script %s enregistré
 OneshotSaveError=Impossible d'écrire %s
 OneshotDeleted=Script %s supprimé
 OneshotConfirmDelete=Supprimer %s ?
+OneshotFileHelp=ou importer un fichier .php (son nom sert de nom de script si le champ est vide ; le fichier remplace le contenu collé)
+OneshotBadName=Nom de script invalide « %s » : lettres, chiffres, _ . - et extension .php
+OneshotNoContent=Aucun contenu : collez un script ou importez un fichier

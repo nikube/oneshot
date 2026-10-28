@@ -19,7 +19,8 @@ foreach ($args as $ref) {
 	if ($c->fetch(0, $ref) <= 0) { echo "$ref: introuvable\n"; continue; }
 	if ($c->statut != Commande::STATUS_VALIDATED) { echo "$ref: statut {$c->statut}, ignorée\n"; continue; }
 	$db->begin();
-	$r = $c->cancel($user); // cancel($user, $idwarehouse) if stock is decremented at order validation
+	// Commande::cancel() takes $user first since Dolibarr 23 ; add $idwarehouse if stock is decremented at order validation
+	$r = version_compare(DOL_VERSION, '23.0', '>=') ? $c->cancel($user) : $c->cancel();
 	$r > 0 ? $db->commit() : $db->rollback();
 	echo "$ref: ".($r > 0 ? 'annulée' : 'ERREUR '.$c->error)."\n";
 }

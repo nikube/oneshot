@@ -28,11 +28,16 @@ $go = in_array('go', $words, true);
 $products = array_values(array_diff($words, array('go')));
 if (!$products) { echo "Usage : REF1 REF2 ... [go]\n"; return; }
 
+// Resolve refs to product ids once: SQL ref matching is case-insensitive and PHP string compare is not
 $in = implode(',', array_map(function ($p) use ($db) { return "'".$db->escape($p)."'"; }, $products));
+$ids = array();
+$res = $db->query("SELECT rowid, ref FROM ".MAIN_DB_PREFIX."product WHERE ref IN (".$in.") AND entity IN (".getEntity('product').")");
+while ($res && ($o = $db->fetch_object($res))) { $ids[(int) $o->rowid] = $o->ref; }
+if (!$ids) { echo "Aucun produit trouvé pour ".implode('/', $products)."\n"; return; }
+
 $sql = "SELECT DISTINCT c.rowid FROM ".MAIN_DB_PREFIX."commande c";
 $sql .= " JOIN ".MAIN_DB_PREFIX."commandedet d ON d.fk_commande = c.rowid";
-$sql .= " JOIN ".MAIN_DB_PREFIX."product p ON p.rowid = d.fk_product";
-$sql .= " WHERE p.ref IN (".$in.") AND c.fk_statut IN (0, 1) AND c.entity IN (".getEntity('commande').")";
+$sql .= " WHERE d.fk_product IN (".implode(',', array_keys($ids)).") AND c.fk_statut IN (0, 1) AND c.entity IN (".getEntity('commande').")";
 $sql .= " AND c.date_commande < '".$db->escape($before)."' ORDER BY c.rowid";
 $res = $db->query($sql);
 if (!$res) { echo "SQL error: ".$db->lasterror()."\n"; return; }
@@ -40,11 +45,11 @@ echo ($go ? 'APPLY' : 'DRY RUN')." - ".$db->num_rows($res)." commande(s) avant $
 
 while ($row = $db->fetch_object($res)) {
 	$c = new Commande($db);
-	$c->fetch($row->rowid);
+	if ($c->fetch($row->rowid) <= 0) { echo "#$row->rowid : fetch impossible, ignorée\n\n"; continue; }
 	$c->fetch_thirdparty();
-	$c->fetch_lines();
-	$targets = array_filter($c->lines, function ($l) use ($products) { return in_array($l->product_ref, $products); });
-	$others = array_filter($c->lines, function ($l) use ($products) { return !in_array($l->product_ref, $products); });
+	$targets = array_filter($c->lines, function ($l) use ($ids) { return isset($ids[(int) $l->fk_product]); });
+	$others = array_filter($c->lines, function ($l) use ($ids) { return !isset($ids[(int) $l->fk_product]); });
+	if (!$targets) { continue; }
 	$wasValidated = ($c->statut == Commande::STATUS_VALIDATED);
 	$desc = implode(', ', array_map(function ($l) { return $l->product_ref.' x'.$l->qty; }, $targets));
 	$others_desc = $others ? implode(', ', array_map(function ($l) { return ($l->product_ref ?: 'ligne libre').' x'.$l->qty; }, $others)) : 'rien d\'autre';
@@ -61,13 +66,13 @@ while ($row = $db->fetch_object($res)) {
 	$db->begin();
 	$ok = true;
 	if (!$others) {
-		if ($wasValidated) { $ok = $c->cancel($user) > 0; }
+		if ($wasValidated) { $ok = (version_compare(DOL_VERSION, '23.0', '>=') ? $c->cancel($user) : $c->cancel()) > 0; } // $user first since Dolibarr 23
 	} else {
 		if ($wasValidated) { $ok = $c->setDraft($user) > 0; }
 		foreach ($targets as $l) {
 			if ($ok) { $ok = $c->deleteLine($user, $l->id) > 0; }
 		}
-		if ($ok && $wasValidated) { $ok = $c->valid($user) > 0; }
+		if ($ok && $wasValidated) { $c->fetch_lines(); $ok = $c->valid($user) > 0; } // deleteLine() leaves the deleted lines in memory
 	}
 	$ok ? $db->commit() : $db->rollback();
 	echo $ok ? " : FAIT\n\n" : " : ERREUR ".$c->error."\n\n";

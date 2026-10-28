@@ -15,3 +15,6 @@ OneshotSaved=Script %s saved
 OneshotSaveError=Cannot write %s
 OneshotDeleted=Script %s deleted
 OneshotConfirmDelete=Delete %s?
+OneshotFileHelp=or upload a .php file (its name is used when the name field is empty; the file replaces the pasted content)
+OneshotBadName=Invalid script name "%s": letters, digits, _ . - and .php extension
+OneshotNoContent=No content: paste a script or upload a file

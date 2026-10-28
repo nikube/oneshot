@@ -78,7 +78,7 @@ $trigger = new InterfaceSuperStockOrder($db);
 $count = array('sorties' => 0, 'déjà sorties' => 0, 'sans produit' => 0, 'erreurs' => 0);
 while ($row = $db->fetch_object($res)) {
 	$c = new Commande($db);
-	$c->fetch($row->rowid);
+	if ($c->fetch($row->rowid) <= 0) { echo "#$row->rowid : fetch impossible, ignorée\n"; $count['erreurs']++; continue; }
 	$c->fetch_thirdparty();
 	$lines = array_filter($c->lines, function ($l) { return !empty($l->fk_product) && $l->product_type == 0 && !empty($l->qty); });
 	$desc = implode(', ', array_map(function ($l) { return $l->product_ref.' x'.$l->qty; }, $lines));

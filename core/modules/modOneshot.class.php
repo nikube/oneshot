@@ -43,7 +43,7 @@ class modOneshot extends DolibarrModules
 		$this->descriptionlong = "Paste a small PHP script, run it with arguments against the live Dolibarr context (\$db, \$user, \$conf) and read its output. For data fixes and batch operations that do not deserve a module.";
 		$this->editor_name = 'Anatole Conseil';
 		$this->editor_url = '';
-		$this->version = '0.1.1';
+		$this->version = '0.2.0';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'technic';
 
@@ -81,6 +81,9 @@ class modOneshot extends DolibarrModules
 	public function init($options = '')
 	{
 		$r = $this->_init(array(), $options);
+		if ($r <= 0) {
+			return $r;
+		}
 		// Seed documents/oneshot with the shipped examples (never overwrite an existing script)
 		$dst = DOL_DATA_ROOT.'/oneshot';
 		dol_mkdir($dst);

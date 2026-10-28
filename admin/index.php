@@ -31,7 +31,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 $langs->loadLangs(array('oneshot@oneshot', 'admin'));
 
-if (!$user->admin) {
+// Arbitrary PHP: admins only, and in multicompany the superadmin only (entity admins would reach every entity)
+if (!isModEnabled('oneshot') || !$user->admin || (isModEnabled('multicompany') && $user->entity > 0)) {
 	accessforbidden();
 }
 
@@ -39,7 +40,19 @@ $dir = DOL_DATA_ROOT.'/oneshot';
 dol_mkdir($dir);
 
 $action = GETPOST('action', 'aZ09');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $action != 'edit') {
+	$action = ''; // save/delete/run only from the POST forms (token checked by main.inc.php), never from a GET link
+}
 $name = GETPOST('name', 'alphanohtml');
+$content = GETPOST('content', 'none');
+// Uploaded file wins over the textarea and names the script when the name field is empty.
+// Uploads are not scanned by the WAF of main.inc.php, so a script containing '<script' or '</textarea' goes through this way.
+if ($action == 'save' && !empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+	$content = file_get_contents($_FILES['file']['tmp_name']);
+	if ($name === '') {
+		$name = basename($_FILES['file']['name']);
+	}
+}
 $output = '';
 $duration = 0;
 $ran = false;
@@ -48,15 +61,22 @@ $ran = false;
 $validName = (bool) preg_match('/^[A-Za-z0-9_.-]+\.php$/', $name) && strpos($name, '..') === false;
 $path = $dir.'/'.$name;
 
-if ($action == 'save' && $validName) {
-	if (file_put_contents($path, GETPOST('content', 'none')) === false) {
+if ($action == 'save' && !$validName) {
+	setEventMessages($langs->trans('OneshotBadName', $name), null, 'errors');
+} elseif ($action == 'save' && $content === '') {
+	setEventMessages($langs->trans('OneshotNoContent'), null, 'errors');
+} elseif ($action == 'save') {
+	if (file_put_contents($path, $content) === false) {
 		setEventMessages($langs->trans('OneshotSaveError', $name), null, 'errors');
 	} else {
 		setEventMessages($langs->trans('OneshotSaved', $name), null);
 	}
 } elseif ($action == 'delete' && $validName && file_exists($path)) {
-	unlink($path);
-	setEventMessages($langs->trans('OneshotDeleted', $name), null);
+	if (unlink($path)) {
+		setEventMessages($langs->trans('OneshotDeleted', $name), null);
+	} else {
+		setEventMessages($langs->trans('OneshotSaveError', $name), null, 'errors');
+	}
 } elseif ($action == 'run' && $validName && file_exists($path)) {
 	$args = preg_split('/\s+/', trim(GETPOST('args', 'alphanohtml')), -1, PREG_SPLIT_NO_EMPTY);
 	set_time_limit(0);
@@ -73,6 +93,10 @@ if ($action == 'save' && $validName) {
 	} catch (Throwable $e) {
 		print "\n[".get_class($e).'] '.$e->getMessage()."\n".$e->getTraceAsString();
 	}
+	while ($db->transaction_opened > 0) { // script left begin() without commit/rollback (exception, early return)
+		$db->rollback();
+		print "\n[oneshot] transaction left open by the script: rolled back\n";
+	}
 	$output = ob_get_clean();
 	$duration = microtime(true) - $start;
 	$ran = true;
@@ -87,7 +111,7 @@ print '<span class="opacitymedium">'.$langs->trans('OneshotIntro', $dir).'</span
 if ($ran) {
 	print '<div class="div-table-responsive-no-min"><table class="noborder centpercent">';
 	print '<tr class="liste_titre"><td>'.$langs->trans('OneshotOutput', $name, round($duration, 2)).'</td></tr>';
-	print '<tr class="oddeven"><td><pre style="white-space:pre-wrap;max-height:60vh;overflow:auto">'.dol_escape_htmltag($output === '' ? $langs->trans('OneshotNoOutput') : $output, 0, 1).'</pre></td></tr>';
+	print '<tr class="oddeven"><td><pre style="white-space:pre-wrap;max-height:60vh;overflow:auto">'.htmlspecialchars($output === '' ? $langs->trans('OneshotNoOutput') : $output, ENT_QUOTES, 'UTF-8').'</pre></td></tr>';
 	print '</table></div><br>';
 }
 
@@ -117,15 +141,17 @@ print '</table></div><br>';
 
 // Add / replace a script
 $editName = ($action == 'edit' && $validName && file_exists($path)) ? $name : '';
-print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" enctype="multipart/form-data">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="save">';
 print '<div class="div-table-responsive-no-min"><table class="noborder centpercent">';
 print '<tr class="liste_titre"><td>'.$langs->trans('OneshotAdd').'</td></tr>';
 print '<tr class="oddeven"><td>';
-print '<input type="text" name="name" class="minwidth300" required pattern="[A-Za-z0-9_.-]+\.php" placeholder="cancel_orders.php" value="'.dol_escape_htmltag($editName).'"><br>';
-print '<textarea name="content" rows="18" class="centpercent" style="font-family:monospace" required>';
-print dol_escape_htmltag($editName ? file_get_contents($path) : "<?php\n// \$db, \$user, \$conf, \$langs and \$args (array) are available\n", 0, 1);
+print '<input type="text" name="name" class="minwidth300" pattern="[A-Za-z0-9_.-]+\.php" placeholder="cancel_orders.php" value="'.dol_escape_htmltag($editName).'"> ';
+print '<input type="file" name="file" accept=".php"> <span class="opacitymedium small">'.$langs->trans('OneshotFileHelp').'</span><br>';
+print '<textarea name="content" rows="18" class="centpercent" style="font-family:monospace">';
+// htmlspecialchars, not dol_escape_htmltag: the latter decodes entities and strips <b>/<strong>, altering the source on a round trip
+print htmlspecialchars($editName ? file_get_contents($path) : "<?php\n// \$db, \$user, \$conf, \$langs and \$args (array) are available\n", ENT_QUOTES, 'UTF-8');
 print '</textarea><br>';
 print '<input type="submit" class="button" value="'.$langs->trans('Save').'">';
 print '</td></tr></table></div>';
